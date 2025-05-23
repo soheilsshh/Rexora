@@ -30,10 +30,19 @@
 
 ## 🔗 WebSocket Endpoint
 
-- **URL Pattern**: `ws://<server-address>/ws/trades/<master_id>/`
-- **Example**: `ws://localhost:8000/ws/trades/soheilmaster/`
+- **URL Pattern**: `ws://<server-address>/ws/trade/<master_id>/`
+- **Example**: `ws://localhost:8000/ws/trade/soheil/`
 
 Each slave connects to the WebSocket server using the master's ID to receive relevant trade actions.
+
+### ✅ WebSocket Routing and Logic Summary
+
+- All clients connect to `ws://localhost:8000/ws/trade/<master_id>/`, where `<master_id>` is a dynamic segment like `soheil`.
+- The server assigns each WebSocket connection to a group named `master_<master_id>`.
+- When a message is received, the server checks that `message['master_account']` matches the group's `master_id`.
+- If they match, the message is broadcast to all clients in that group using `channel_layer.group_send()`.
+- The updated consumer logic ensures only authorized and correctly routed messages are delivered.
+- Log messages are printed for connections, broadcasts, and validation steps.
 
 ---
 
@@ -46,7 +55,7 @@ All messages are JSON-formatted. Below are the supported actions:
 ```json
 {
   "action": "open_trade",
-  "master_account": "soheilmaster",
+  "master_account": "soheil",
   "PTI": "Rexora_ABC1234",
   "symbol": "XAUUSD",
   "lot_size": 1.0,
@@ -66,7 +75,7 @@ All messages are JSON-formatted. Below are the supported actions:
 ```json
 {
   "action": "modify_trade",
-  "master_account": "soheilmaster",
+  "master_account": "soheil",
   "PTI": "Rexora_ABC1234",
   "new_stop_loss": 1790.0,
   "new_take_profit": 1820.0
@@ -78,7 +87,7 @@ All messages are JSON-formatted. Below are the supported actions:
 ```json
 {
   "action": "close_trade",
-  "master_account": "soheilmaster",
+  "master_account": "soheil",
   "PTI": "Rexora_ABC1234"
 }
 ```
@@ -88,7 +97,7 @@ All messages are JSON-formatted. Below are the supported actions:
 ```json
 {
   "action": "open_pending_order",
-  "master_account": "soheilmaster",
+  "master_account": "soheil",
   "PTI": "Rexora_ABC1234",
   "symbol": "XAUUSD",
   "lot_size": 1.0,
@@ -179,7 +188,7 @@ python manage.py runserver
 WebSocket server will be available at:
 
 ```
-ws://localhost:8000/ws/trades/soheilmaster/
+ws://localhost:8000/ws/trade/soheil/
 ```
 
 ---
@@ -205,11 +214,21 @@ Ensure Redis is installed and properly running on the deployment server.
 
 ---
 
+## 🔒 Security Considerations
+
+- Add authentication for WebSocket connections to prevent unauthorized access.
+- Validate all incoming messages to ensure they follow the correct structure.
+- Implement logging for message tracking and debugging.
+
+---
+
 ## 🚀 Future Enhancements
 
 - Add support for multiple master accounts
 - Save all trade actions to a database
+- Build a frontend dashboard for monitoring
 - Implement secure communication with SSL/TLS and token-based authentication
 
 ---
 
+Feel free to fork, contribute, or open issues on the GitHub repository!
