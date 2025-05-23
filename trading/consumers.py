@@ -3,35 +3,57 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 class TradeConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        await self.channel_layer.group_add("trade_group", self.channel_name)
+
+        self.master_id = self.scope['url_route']['kwargs']['master_id']
+        self.group_name = f"master_{self.master_id}"
+
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
-        print("WebSocket connected")
+        print(f"[CONNECTED] Client joined group: {self.group_name}")
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard("trade_group", self.channel_name)
-        print("WebSocket disconnected")
+
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        print(f"[DISCONNECTED] Client left group: {self.group_name}")
 
     async def receive(self, text_data):
         try:
             data = json.loads(text_data)
             action = data.get('action')
-            master = data.get('master_account') # checking for mater accunt validation
+            master_account = data.get('master_account')
 
-            if action in (['open_trade', 'modify_trade', 'close_trade', 'open_pending_order']):
+
+            if not master_account:
+                await self.send(text_data=json.dumps({
+                    'error': 'Missing master_account field.'
+                }))
+                return
+
+
+            if master_account != self.master_id:
+                await self.send(text_data=json.dumps({
+                    'error': 'master_account mismatch. You are connected as: ' + self.master_id
+                }))
+                return
+
+            if action in ['open_trade', 'modify_trade', 'close_trade', 'open_pending_order']:
                 await self.channel_layer.group_send(
-                    "trade_group",
+                    self.group_name,
                     {
                         'type': 'broadcast_message',
                         'message': data
                     }
                 )
+                print(f"[RECEIVE] Action '{action}' broadcasted in group: {self.group_name}")
             else:
                 await self.send(text_data=json.dumps({
-                    'error': 'Invalid action type and master'
+                    'error': 'Invalid action type.'
                 }))
+
         except json.JSONDecodeError:
             await self.send(text_data=json.dumps({
-                'error': 'Invalid JSON'
+                'error': 'Invalid JSON format.'
             }))
         except Exception as e:
             await self.send(text_data=json.dumps({
@@ -40,19 +62,5 @@ class TradeConsumer(AsyncWebsocketConsumer):
 
     async def broadcast_message(self, event):
         message = event.get('message')
-        action = message.get('action')
-
-
-        if action == 'open_trade':
-            print(f"[INFO] Broadcasting open_trade: {message}")
-        elif action == 'modify_trade':
-            print(f"[INFO] Broadcasting modify_trade: {message}")
-        elif action == 'close_trade':
-            print(f"[INFO] Broadcasting close_trade: {message}")
-        elif action == 'open_pending_order':
-            print(f"[INFO] Broadcasting open_pending_order: {message}")
-        else:
-            print(f"[WARNING] Unknown action broadcasted: {action}")
-
-
+        print(f"[BROADCAST] Sending to group {self.group_name}: {message}")
         await self.send(text_data=json.dumps(message))
