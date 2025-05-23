@@ -205,21 +205,11 @@ Ensure Redis is installed and properly running on the deployment server.
 
 ---
 
-## 🔒 Security Considerations
-
-- Add authentication for WebSocket connections to prevent unauthorized access.
-- Validate all incoming messages to ensure they follow the correct structure.
-- Implement logging for message tracking and debugging.
-
----
-
 ## 🚀 Future Enhancements
 
 - Add support for multiple master accounts
 - Save all trade actions to a database
-- Build a frontend dashboard for monitoring
 - Implement secure communication with SSL/TLS and token-based authentication
 
 ---
 
-Feel free to fork, contribute, or open issues on the GitHub repository!
