@@ -15,9 +15,9 @@ class TradeConsumer(AsyncWebsocketConsumer):
         try:
             data = json.loads(text_data)
             action = data.get('action')
-            master = data.get('master_account')
+            master = data.get('master_account') # checking for mater accunt validation
 
-            if action in (['open_trade', 'modify_trade', 'close_trade', 'open_pending_order']) and (master == 'soheilmaster'):
+            if action in (['open_trade', 'modify_trade', 'close_trade', 'open_pending_order']):
                 await self.channel_layer.group_send(
                     "trade_group",
                     {
